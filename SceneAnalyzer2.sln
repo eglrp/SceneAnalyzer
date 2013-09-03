@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SceneAnalyzer2", "SceneAnalyzer2\SceneAnalyzer2.vcxproj", "{63108B97-D07A-43E4-A943-9B18219005F5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{63108B97-D07A-43E4-A943-9B18219005F5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{63108B97-D07A-43E4-A943-9B18219005F5}.Debug|Win32.Build.0 = Debug|Win32
+		{63108B97-D07A-43E4-A943-9B18219005F5}.Release|Win32.ActiveCfg = Release|Win32
+		{63108B97-D07A-43E4-A943-9B18219005F5}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

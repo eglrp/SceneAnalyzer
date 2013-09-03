@@ -1,0 +1,27 @@
+[color]
+numOfSamples          20
+minMatchDist          60
+minNumOfMatchCount     3
+subSampleInterval     16
+learnRate           0.02
+
+[gradient]
+numOfSamples          20
+minMatchDist          40
+minNumOfMatchCount     2
+subSampleInterval     16
+learnRate           0.02
+
+[gray]
+numOfSamples          20
+minMatchDist          10
+minNumOfMatchCount     2
+subSampleInterval     16
+learnRate           0.02
+
+[chromadiff]
+numOfSamples          10
+minMatchDist           4
+minNumOfMatchCount     2
+subSampleInterval     16
+learnRate           0.02
