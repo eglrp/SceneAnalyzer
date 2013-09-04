@@ -136,6 +136,15 @@ void FeaturePointTracker::track(std::vector<cv::KeyPoint>& currKeyPoints, std::v
 	}
 }
 
+void FeaturePointTracker::clear(void)
+{
+	for (FtrPtPtrItr itr = pointList.begin(); itr != pointList.end(); ++itr)
+	{
+		delete (*itr);
+	}
+	pointList.clear();
+}
+
 void FeaturePointTracker::drawCurrentPositions(cv::Mat& image, const cv::Scalar& color)
 {
 	if (image.size() != normSize || image.data == 0)
@@ -276,13 +285,6 @@ static void getLUTPointsCrspndToLineSegment(const LineSegment& lineSegment, vect
 			y0 += sy;
 		}
 	}
-}
-
-typedef pair<int, float> PairIndexWeight;
-
-static inline bool greaterByWeight(const PairIndexWeight& lhs, const PairIndexWeight& rhs)
-{
-	return lhs.second > rhs.second;
 }
 
 static inline Scalar operator*(const Scalar& scalar, float r)

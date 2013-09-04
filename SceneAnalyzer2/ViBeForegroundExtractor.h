@@ -44,8 +44,12 @@ private:
 class ViBeForegroundExtractor
 {
 public:
+	struct State
+	{
+		enum {BEGIN = 0, NORMAL = 1, ABNORMAL = 2};
+	};
 	void init(Mat& image, Mat& gradImage, const string& configFilePath);
-	void apply(Mat& image, Mat& gradImage, Mat& foregroundImage, vector<Rect>& rects);
+	int apply(Mat& image, Mat& gradImage, Mat& foregroundImage, vector<Rect>& rects);
 
 private:
 	Mat colorForeImage;

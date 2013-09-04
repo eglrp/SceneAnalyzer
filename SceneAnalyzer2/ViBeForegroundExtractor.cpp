@@ -4,7 +4,7 @@ void StaticRectExtractor::init(const Size& imageSize)
 {
 	size = imageSize;
 	currFrameCount = 0;
-	thresFrameCount = 1000;
+	thresFrameCount = 500;
 	maxFrameCount = 1000;
 }
 
@@ -119,7 +119,7 @@ void ViBeForegroundExtractor::init(Mat& image, Mat& gradImage, const string& pat
 	foreLargeCount = 0;
 }
 
-void ViBeForegroundExtractor::apply(Mat& image, Mat& gradImage, 
+int ViBeForegroundExtractor::apply(Mat& image, Mat& gradImage, 
 	Mat& foregroundImage, vector<Rect>& foregroundRects)
 {
 	colorBackModel.update(image, colorForeImage, staticRects);
@@ -136,18 +136,27 @@ void ViBeForegroundExtractor::apply(Mat& image, Mat& gradImage,
 	findContours(testChangeForeImage, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 	bool hasLargeForeground = false;
 	vector<Rect> rects;
+	Rect unionRect(0, 0, 0, 0);
 	for (int i = 0; i < contours.size(); i++)
 	{
 		Rect rect = boundingRect(contours[i]);
-		//if (rect.width > 0.8 * imageWidth && rect.height > 0.8 * imageHeight)
-		if (rect.width > 1.8 * imageWidth && rect.height > 1.8 * imageHeight)
+		if (rect.width > 0.9 * imageWidth && rect.height > 0.9 * imageHeight)
 			hasLargeForeground = true;
 		if (rect.width > 20 && rect.height > 20)
 		{
 			rects.push_back(rect);
 			refinedContours.push_back(contours[i]);
 		}
+		if (rect.width > 50 && rect.height > 50)
+		{
+			if (unionRect == Rect(0, 0, 0, 0))
+				unionRect = rect;
+			else
+				unionRect |= rect;
+		}
 	}
+	if (unionRect.area() > 0.95 * imageWidth * imageHeight)
+		hasLargeForeground = true;
 	rectExtractor.extract(rects, staticRects);
 
 	//for (int i = 0; i < rects.size(); i++)
@@ -164,22 +173,48 @@ void ViBeForegroundExtractor::apply(Mat& image, Mat& gradImage,
 	{
 		foreLargeCount++;
 		printf("foreground large, count is %d\n", foreLargeCount);
-		//waitKey(0);
+		waitKey(0);
+		if (foreLargeCount > 10)
+		{
+			printf("refill foreground\n");
+			waitKey(0);
+			foreLargeCount = 0;
+			colorBackModel.refill(image);
+			gradBackModel.refill(gradImage);
+			rectExtractor.clear();
+			foregroundImage = Mat::zeros(imageHeight, imageWidth, CV_8UC1);
+			foregroundRects.clear();
+			return State::BEGIN;
+		}
+		else
+		{
+			foregroundImage = Mat::zeros(imageHeight, imageWidth, CV_8UC1);
+			drawContours(foregroundImage, refinedContours, -1, Scalar(255, 255, 255), -1);
+			foregroundRects = rects;
+			return State::ABNORMAL;
+		}
 	}
-	else 
-		foreLargeCount = 0;
-
-	if (foreLargeCount > 10)
+	else
 	{
-		printf("refille foreground\n");
-		//waitKey(0);
-		foreLargeCount = 0;
-		colorBackModel.refill(image);
-		gradBackModel.refill(gradImage);
-		rectExtractor.clear();
+		if (foreLargeCount > 0)
+		{
+			printf("refill foreground\n");
+			waitKey(0);
+			foreLargeCount = 0;
+			colorBackModel.refill(image);
+			gradBackModel.refill(gradImage);
+			rectExtractor.clear();
+			foregroundImage = Mat::zeros(imageHeight, imageWidth, CV_8UC1);
+			foregroundRects.clear();
+			return State::BEGIN;
+		}
+		else
+		{
+			foreLargeCount = 0;
+			foregroundImage = Mat::zeros(imageHeight, imageWidth, CV_8UC1);
+			drawContours(foregroundImage, refinedContours, -1, Scalar(255, 255, 255), -1);
+			foregroundRects = rects;
+			return State::NORMAL;
+		}
 	}
-
-	foregroundImage = Mat::zeros(imageHeight, imageWidth, CV_8UC1);
-	drawContours(foregroundImage, refinedContours, -1, Scalar(255, 255, 255), -1);
-	foregroundRects = rects;
 }

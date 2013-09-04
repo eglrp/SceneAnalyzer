@@ -23,23 +23,28 @@ public:
 		  hasInit(false),
 		  orb(500, 1.41F, 2, 15, 0, 2, 0, 15), 
 		  matcher(NORM_HAMMING) {};
-	void analyze(cv::Mat& frame, 
-		         long long int timeStamp, int frameCount,
-		         cv::Mat& foregroundImage, 
-				 std::vector<Rect>& foreRects,
-				 FeaturePointTracker& pointTracker);
-	void analyze(DetectTask& detectTask, FeaturePointTracker& pointTracker)
+	struct State
 	{
-		analyze(detectTask.fpkg.imSrc,
-			    detectTask.fpkg.rawtime,
-				detectTask.fpkg.frameIndex,
-				detectTask.fpkg.imMask,
-				detectTask.recs,
-				pointTracker);
+		enum {BEGIN = 0, LEARNING = 1, NORMAL = 2, ABNORMAL = 3};
+	};
+	int analyze(cv::Mat& frame, 
+		        long long int timeStamp, int frameCount,
+		        cv::Mat& foregroundImage, 
+				std::vector<Rect>& foreRects,
+				FeaturePointTracker& pointTracker);
+	int analyze(DetectTask& detectTask, FeaturePointTracker& pointTracker)
+	{
+		return analyze(detectTask.fpkg.imSrc,
+			           detectTask.fpkg.rawtime,
+				       detectTask.fpkg.frameIndex,
+				       detectTask.fpkg.imMask,
+				       detectTask.recs,
+				       pointTracker);
 	};
 private:
 	string path;
 	bool hasInit;
+	int state;
 	cv::Size origSize;
 	cv::Size normSize;
 	int scaleOrigToNorm;

@@ -6,7 +6,7 @@ static void calcThresholdedGradient(Mat& src, Mat& dst, double thres);
 static void calcGradient(Mat& src, Mat& dst, double scale);
 static inline Rect mul(const Rect& rect, int scale);
 
-void SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
+int SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 	Mat& foregroundImage, vector<Rect>& foregroundRects, FeaturePointTracker& pointTracker)
 {
 	if (!hasInit)
@@ -26,7 +26,8 @@ void SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 		foregroundImage = Mat::zeros(normSize, CV_8UC1);
 		foregroundRects.clear();
 		pointTracker.init(Size(frame.cols, frame.rows), normSize, scaleOrigToNorm);
-		return;
+		state = State::BEGIN;
+		return state;
 	}
 
 	resize(frame, image, normSize);
@@ -35,8 +36,18 @@ void SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 	GaussianBlur(grayImage, grayBlurImage, Size(3, 3), 1);
 	calcGradient(grayBlurImage, gradImage, 0.25);
 
+	int extractorState;
 	vector<Rect> normRects;
-	foreExtractor.apply(blurImage, gradImage, foregroundImage, normRects);
+	extractorState = foreExtractor.apply(blurImage, gradImage, foregroundImage, normRects);
+	if (extractorState == ViBeForegroundExtractor::State::BEGIN)
+	{
+		lastKeyPoints.clear();
+		lastDescriptors.release();
+		dirHist.clear();
+		pointTracker.clear();
+		foregroundRects.clear();
+		return State::BEGIN;
+	}
 	foregroundRects.resize(normRects.size());
 	for (int i = 0; i < normRects.size(); i++)
 		foregroundRects[i] = mul(normRects[i], scaleOrigToNorm);
@@ -73,12 +84,33 @@ void SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 	lastKeyPoints = currKeyPoints;
 	currDescriptors.copyTo(lastDescriptors);
 
-	//Mat stableDirections[3];
-	//lut.getDirections(stableDirections, 3);
-	//imshow("stable direction 0", stableDirections[0]);
-	//imshow("stable direction 1", stableDirections[1]);
-	//imshow("stable direction 2", stableDirections[2]);
-	//Mat currDirectionsAsGrayScale;
+	if (state == State::BEGIN)
+	{
+		if (extractorState == ViBeForegroundExtractor::State::NORMAL)
+			state = State::LEARNING;
+		else if (extractorState == ViBeForegroundExtractor::State::ABNORMAL)
+			state = State::ABNORMAL;
+	}
+	else if (state == State::LEARNING)
+	{
+		if (extractorState == ViBeForegroundExtractor::State::NORMAL)
+		{
+			if (dirHist.calcUpdatedRatio() < 0.25)
+				state = State::LEARNING;
+			else
+				state = State::NORMAL;
+		}
+		else if (extractorState == ViBeForegroundExtractor::State::ABNORMAL)
+			state = State::ABNORMAL;		
+	}
+	else
+	{
+		if (extractorState == ViBeForegroundExtractor::State::NORMAL)
+			state = State::NORMAL;
+		else if (extractorState == ViBeForegroundExtractor::State::ABNORMAL)
+			state = State::ABNORMAL;
+	}
+
 	//Mat ftrPoints = Mat::zeros(normSize, CV_8UC1);
 	//pointTracker.drawCurrentPositions(ftrPoints, 255);
 	//blur(ftrPoints, ftrPoints, Size(11, 11));
@@ -94,26 +126,28 @@ void SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 	dirHist.getMainDirection(mainDir);
 	imshow("main dir image", mainDir);
 
-	Mat dirs[3];
-	dirHist.getDirections(dirs, 3);
-	imshow("dir image 0", dirs[0]);
-	imshow("dir image 1", dirs[1]);
-	imshow("dir image 2", dirs[2]);
+	//Mat dirs[3];
+	//dirHist.getDirections(dirs, 3);
+	//imshow("dir image 0", dirs[0]);
+	//imshow("dir image 1", dirs[1]);
+	//imshow("dir image 2", dirs[2]);
 
-	Mat mainDirection = image.clone();
-	dirHist.drawMainDirection(mainDirection, Scalar(0, 255, 0));
-	imshow("main direction", mainDirection);
+	//Mat mainDirection = image.clone();
+	//dirHist.drawMainDirection(mainDirection, Scalar(0, 255, 0));
+	//imshow("main direction", mainDirection);
 
-	Mat directions[3];
-	directions[0] = image.clone();
-	directions[1] = image.clone();
-	directions[2] = image.clone();
-	dirHist.drawDirections(directions, 3, Scalar(0, 255, 0));
-	imshow("direction 0", directions[0]);
-	imshow("direction 1", directions[1]);
-	imshow("direction 2", directions[2]);
+	//Mat directions[3];
+	//directions[0] = image.clone();
+	//directions[1] = image.clone();
+	//directions[2] = image.clone();
+	//dirHist.drawDirections(directions, 3, Scalar(0, 255, 0));
+	//imshow("direction 0", directions[0]);
+	//imshow("direction 1", directions[1]);
+	//imshow("direction 2", directions[2]);
 
-	waitKey(30);
+	//waitKey(30);
+
+	return state;
 }
 
 void calcThresholdedGradient(Mat& src, Mat& dst, double thres)

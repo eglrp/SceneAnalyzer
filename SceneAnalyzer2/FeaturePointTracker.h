@@ -56,6 +56,7 @@ public:
 	void init(const cv::Size& originalSize, const cv::Size& normalSize, int ratio);
 	void track(std::vector<cv::KeyPoint>& currKeyPoints, std::vector<cv::DMatch>& matches,
 		std::vector<LineSegment>& lineSegments, long long int timeStamp, int frameCount);
+	void clear(void);
 	void drawCurrentPositions(cv::Mat& image, const cv::Scalar& color);
 	void drawHistories(cv::Mat& image, const cv::Scalar& color);
 	// 以下两个函数 运动方向 1 表示 0 度，180 表示 358 度，255 表示运动方向未知
@@ -126,7 +127,7 @@ public:
 				ptrHist += (1 + numOfBins);
 			}
 		}
-		return double(updateCount) / histWidth * histHeight;
+		return double(updateCount) / (histWidth * histHeight);
 	}
 	void clear(void)
 	{
