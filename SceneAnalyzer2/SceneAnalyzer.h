@@ -30,6 +30,7 @@ public:
 	int analyze(cv::Mat& frame, 
 		        long long int timeStamp, int frameCount,
 		        cv::Mat& foregroundImage, 
+				cv::Mat& mainDirectionImage,
 				std::vector<Rect>& foreRects,
 				FeaturePointTracker& pointTracker);
 	int analyze(DetectTask& detectTask, FeaturePointTracker& pointTracker)
@@ -38,6 +39,7 @@ public:
 			           detectTask.fpkg.rawtime,
 				       detectTask.fpkg.frameIndex,
 				       detectTask.fpkg.imMask,
+					   detectTask.mainFLow,
 				       detectTask.recs,
 				       pointTracker);
 	};

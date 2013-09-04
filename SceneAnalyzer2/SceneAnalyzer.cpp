@@ -7,7 +7,7 @@ static void calcGradient(Mat& src, Mat& dst, double scale);
 static inline Rect mul(const Rect& rect, int scale);
 
 int SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
-	Mat& foregroundImage, vector<Rect>& foregroundRects, FeaturePointTracker& pointTracker)
+	Mat& foregroundImage, Mat& mainDirImage, vector<Rect>& foregroundRects, FeaturePointTracker& pointTracker)
 {
 	if (!hasInit)
 	{
@@ -24,6 +24,7 @@ int SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 		foreExtractor.init(blurImage, gradImage, path);
 		dirHist.init(normSize, Size(8, 8), 16);
 		foregroundImage = Mat::zeros(normSize, CV_8UC1);
+		mainDirImage = Mat::zeros(normSize, CV_8UC1);
 		foregroundRects.clear();
 		pointTracker.init(Size(frame.cols, frame.rows), normSize, scaleOrigToNorm);
 		state = State::BEGIN;
@@ -46,6 +47,8 @@ int SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 		dirHist.clear();
 		pointTracker.clear();
 		foregroundRects.clear();
+		foregroundImage = Mat::zeros(normSize, CV_8UC1);
+		mainDirImage = Mat::zeros(normSize, CV_8UC1);
 		return State::BEGIN;
 	}
 	foregroundRects.resize(normRects.size());
@@ -81,6 +84,7 @@ int SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 	pointTracker.track(currKeyPoints, filteredMatches, lineSegs, timeStamp, frameCount);
 	pointTracker.fillCurrentDirections(foregroundImage);
 	dirHist.update(lineSegs);
+	dirHist.getMainDirection(mainDirImage);
 	lastKeyPoints = currKeyPoints;
 	currDescriptors.copyTo(lastDescriptors);
 
@@ -122,9 +126,9 @@ int SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 	//imshow("result", result);
 	//waitKey(30);
 
-	Mat mainDir;
-	dirHist.getMainDirection(mainDir);
-	imshow("main dir image", mainDir);
+	//Mat mainDir;
+	//dirHist.getMainDirection(mainDir);
+	//imshow("main dir image", mainDir);
 
 	//Mat dirs[3];
 	//dirHist.getDirections(dirs, 3);

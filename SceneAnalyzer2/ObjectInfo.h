@@ -113,6 +113,8 @@ public:
 	FramePackage fpkg;		// 任务对应的图像信息
 	vector<Rect> recs;		// 任务中得到的一些前景外接矩形
 
+	Mat mainFLow;			// 记录运动场景的主方向
+
 	vector<ItemInfo>		items;
 	vector<PedestrianInfo>	pedestrians;
 	vector<VehicleInfo>		vehicles;
