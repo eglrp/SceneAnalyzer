@@ -22,7 +22,8 @@ void SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 		GaussianBlur(grayImage, grayBlurImage, Size(3, 3), 1);
 		calcGradient(grayBlurImage, gradImage, 0.25);
 		foreExtractor.init(blurImage, gradImage, path);
-		lut.init(normSize, Size(8, 8), 8);
+		//lut.init(normSize, Size(8, 8), 8);
+		dirHist.init(normSize, Size(8, 8), 16);
 		foregroundImage = Mat::zeros(normSize, CV_8UC1);
 		foregroundRects.clear();
 		pointTracker.init(Size(frame.cols, frame.rows), normSize, scaleOrigToNorm);
@@ -69,7 +70,8 @@ void SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 	}
 	pointTracker.track(currKeyPoints, filteredMatches, lineSegs, timeStamp, frameCount);
 	pointTracker.fillCurrentDirections(foregroundImage);
-	lut.update(lineSegs);
+	//lut.update(lineSegs);
+	dirHist.update(lineSegs);
 	lastKeyPoints = currKeyPoints;
 	currDescriptors.copyTo(lastDescriptors);
 
@@ -89,6 +91,31 @@ void SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 	//	rectangle(result, normRects[i], Scalar(0, 0, 255));
 	//imshow("result", result);
 	//waitKey(30);
+
+	Mat mainDir;
+	dirHist.getMainDirection(mainDir);
+	imshow("main dir image", mainDir);
+
+	Mat dirs[3];
+	dirHist.getDirections(dirs, 3);
+	imshow("dir image 0", dirs[0]);
+	imshow("dir image 1", dirs[1]);
+	imshow("dir image 2", dirs[2]);
+
+	Mat mainDirection = image.clone();
+	dirHist.drawMainDirection(mainDirection, Scalar(0, 255, 0));
+	imshow("main direction", mainDirection);
+
+	Mat directions[3];
+	directions[0] = image.clone();
+	directions[1] = image.clone();
+	directions[2] = image.clone();
+	dirHist.drawDirections(directions, 3, Scalar(0, 255, 0));
+	imshow("direction 0", directions[0]);
+	imshow("direction 1", directions[1]);
+	imshow("direction 2", directions[2]);
+
+	waitKey(30);
 }
 
 void calcThresholdedGradient(Mat& src, Mat& dst, double thres)

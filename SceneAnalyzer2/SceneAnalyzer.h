@@ -1,7 +1,4 @@
-﻿#ifndef _SCENEANALYZER_H__
-#define _SCENEANALYZER_H__
-
-
+﻿#pragma once
 
 #include <cstdlib>
 #include <cstdio>
@@ -56,8 +53,6 @@ private:
 	std::vector<cv::KeyPoint> currKeyPoints, lastKeyPoints;
 	cv::Mat currDescriptors, lastDescriptors;
 	ViBeForegroundExtractor foreExtractor;
-	DirectionLookUpTable lut;	
+	//DirectionLookUpTable lut;	
+	LocalDirectionHistogram dirHist;
 };
-
-
-#endif // !_SCENEANALYZER_H__

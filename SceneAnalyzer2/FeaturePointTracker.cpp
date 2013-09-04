@@ -305,7 +305,7 @@ void DirectionLookUpTable::update(const vector<LineSegment>& lineSegments)
 		for (int j = 0; j < points.size(); j++)
 		{
 			float* ptrHist = &lut.at<float>(points[j].y, points[j].x * (1 + numOfBins));
-			if (ptrHist[0] < maxCount)
+			if (ptrHist[numOfBins] < maxCount)
 			{
 				ptrHist[numOfBins] += 1;
 				ptrHist[binIndex] += 1.0F / ptrHist[numOfBins];
@@ -537,6 +537,136 @@ void DirectionLookUpTable::getDirections(cv::Mat* images, int numOfImages)
 			unsigned char* ptrImage = images[k].ptr<unsigned char>(i);
 			for (int j = 0; j < imageWidth; j++)
 				ptrImage[j] = ptrAngle[j / stepX];
+		}
+	}
+}
+
+void LocalDirectionHistogram::init(const Size& imageSize, const Size& blockSize, int numberOfBins)
+{
+	imageWidth = imageSize.width;
+	imageHeight = imageSize.height;
+	stepX = blockSize.width;
+	stepY = blockSize.height;
+	histHeight = imageSize.height / stepY;
+	histWidth = imageSize.width / stepX;
+	numOfBins = numberOfBins;
+	hist.init(Size(histWidth, histHeight), numberOfBins);
+}
+
+void LocalDirectionHistogram::update(const vector<LineSegment>& lineSegments)
+{	
+	for (int i = 0; i < lineSegments.size(); i++)
+	{
+		// 根据 angle 值确定应该修改哪个 bin
+		int binIndex = getBinIndex(lineSegments[i].angle, numOfBins);
+		vector<Point> points;
+		// 根据起始点和终止点计算 LUT 中哪些位置的元素的直方图需要修改
+		getLUTPointsCrspndToLineSegment(lineSegments[i], points, stepX, stepY);
+		for (int j = 0; j < points.size(); j++)
+		{
+			hist.update(points[j].x, points[j].y, binIndex);
+		}
+	}
+}
+
+void LocalDirectionHistogram::getMainDirection(Mat& image)
+{
+	vector<int> angles;
+	hist.getLocalMaximun(angles);
+	for (int i = 0; i < histWidth * histHeight; i++)
+		angles[i] = (angles[i] == numOfBins ? 255 : 180 * float(angles[i]) / numOfBins);
+	image.create(imageHeight, imageWidth, CV_8UC1);
+
+	for (int i = 0; i < imageHeight; i++)
+	{
+		int* ptrAngle = &(angles[i / stepY * histWidth]);
+		unsigned char* ptrImage = image.ptr<unsigned char>(i);
+		for (int j = 0; j < imageWidth; j++)
+			ptrImage[j] = ptrAngle[j / stepX];
+	}
+}
+
+void LocalDirectionHistogram::drawMainDirection(Mat& image, const Scalar& color)
+{
+	const static int radius = 4;
+	vector<IndexedFloat> data;
+	hist.getLocalMaximun(data);
+	for (int i = 0; i < histHeight; i++)
+	{
+		IndexedFloat* ptrData = &data[i * histWidth];
+		for (int j = 0; j < histWidth; j++)
+		{
+			if (ptrData[j].first < numOfBins)
+			{
+				double angle = mathPi * 2 * float(ptrData[j].first) / numOfBins;
+				Point beg, end, center;
+				center.x = (j + 0.5F) * stepX;
+				center.y = (i + 0.5F) * stepY;
+				beg.x = center.x - radius * cos(angle);
+				beg.y = center.y - radius * sin(angle);
+				end.x = center.x + radius * cos(angle);
+				end.y = center.y + radius * sin(angle);
+				line(image, beg, end, color * ptrData[j].second);
+				circle(image, beg, 1, color * ptrData[j].second);
+			}
+		}
+	}
+}
+
+void LocalDirectionHistogram::getDirections(cv::Mat* images, int numOfImages)
+{
+	vector<vector<int> > angles;
+	hist.getLocalMaxima(angles, numOfImages);
+	for (int k = 0; k < numOfImages; k++)
+	{
+		for (int i = 0; i < histWidth * histHeight; i++)
+		{
+			angles[k][i] = (angles[k][i] == numOfBins ? 255 : 180 * float(angles[k][i]) / numOfBins);
+		}
+	}
+	for (int k = 0; k < numOfImages; k++)
+	{
+		images[k].create(imageHeight, imageWidth, CV_8UC1);
+	}	
+
+	for (int k = 0; k < numOfImages; k++)
+	{
+		for (int i = 0; i < imageHeight; i++)
+		{
+			int* ptrAngle = &(angles[k][i / stepY * histWidth]);
+			unsigned char* ptrImage = images[k].ptr<unsigned char>(i);
+			for (int j = 0; j < imageWidth; j++)
+				ptrImage[j] = ptrAngle[j / stepX];
+		}
+	}
+}
+
+void LocalDirectionHistogram::drawDirections(cv::Mat* images, int numOfImages, const Scalar& color)
+{
+	const static int radius = 4;
+	vector<vector<IndexedFloat> > data;
+	hist.getLocalMaxima(data, numOfImages);
+	for (int k = 0; k < numOfImages; k++)
+	{		
+		for (int i = 0; i < histHeight; i++)
+		{
+			IndexedFloat* ptrData = &data[k][i * histWidth];
+			for (int j = 0; j < histWidth; j++)
+			{
+				if (ptrData[j].first < numOfBins)
+				{					
+					double angle = mathPi * 2 * float(ptrData[j].first) / numOfBins;
+					Point beg, end, center;
+					center.x = (j + 0.5F) * stepX;
+					center.y = (i + 0.5F) * stepY;
+					beg.x = center.x - radius * cos(angle);
+					beg.y = center.y - radius * sin(angle);
+					end.x = center.x + radius * cos(angle);
+					end.y = center.y + radius * sin(angle);
+					line(images[k], beg, end, color * ptrData[j].second);
+					circle(images[k], beg, 2, color * ptrData[j].second);				
+				}
+			}
 		}
 	}
 }

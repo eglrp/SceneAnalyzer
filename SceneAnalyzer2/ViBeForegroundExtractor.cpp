@@ -17,6 +17,7 @@ void StaticRectExtractor::extract(const vector<Rect>& rects, vector<Rect>& stabl
 	}
 	else if (currFrameCount == maxFrameCount)
 	{
+		currFrameCount++;
 		// 删除 startFrameCount <= thresFrameCount 的矩形
 		for (vector<RectInfo>::iterator itr = staticRectInfos.begin(); itr != staticRectInfos.end();)
 		{

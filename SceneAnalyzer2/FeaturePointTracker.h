@@ -97,3 +97,197 @@ private:
 	float initWeight;
 	int maxCount;
 };
+
+typedef std::pair<int, float> IndexedFloat;
+
+inline bool greaterByValue(const IndexedFloat& lhs, const IndexedFloat& rhs)
+{
+	return lhs.second > rhs.second;
+}
+
+class LocalHistogram
+{
+public:
+	void init(const cv::Size& size, int numberOfBins)
+	{
+		histWidth = size.width;
+		histHeight = size.height;
+		numOfBins = numberOfBins;
+		learnRate = 0.01F;
+		maxCount = 1.0F / learnRate; 
+		hist = cv::Mat::zeros(histHeight, histWidth * (numOfBins + 1), CV_32FC1);
+	};
+	void update(int x, int y, int binIndex)
+	{
+		float* ptrHist = &hist.at<float>(y, x * (1 + numOfBins));
+		if (ptrHist[numOfBins] < maxCount)
+		{
+			ptrHist[numOfBins] += 1;
+			ptrHist[binIndex] += 1.0F / ptrHist[numOfBins];
+		}
+		else
+		{
+			ptrHist[binIndex] += learnRate;
+		}
+		float acc = 0;
+		for (int k = 0; k < numOfBins; k++)
+		{
+			acc += ptrHist[k];
+		}
+		for (int k = 0; k < numOfBins; k++)
+		{
+			ptrHist[k] /= acc;
+		}
+	};
+	void clear(void)
+	{
+		hist.setTo(0);
+	};
+	void getLocalMaximun(std::vector<int>& data)
+	{
+		data.resize(histWidth * histHeight, numOfBins);
+		for (int i = 0; i < histHeight; i++)
+		{
+			float* ptrHist = hist.ptr<float>(i);
+			int* ptrData = &data[i * histWidth];
+			for (int j = 0; j < histWidth; j++)
+			{
+				if (ptrHist[numOfBins] > 0)
+				{
+					int mainIndex;
+					float currMaxRatio = -1.0F;
+					for (int k = 0; k < numOfBins; k++)
+					{
+						if (ptrHist[k] > currMaxRatio)
+						{
+							currMaxRatio = ptrHist[k];
+							mainIndex = k;
+						}
+					}
+					ptrData[j] = mainIndex;
+				}
+				ptrHist += (numOfBins + 1);
+			}
+		}
+	};
+	void getLocalMaximun(std::vector<IndexedFloat>& data)
+	{
+		data.resize(histWidth * histHeight, IndexedFloat(numOfBins, 0));
+		for (int i = 0; i < histHeight; i++)
+		{
+			float* ptrHist = hist.ptr<float>(i);
+			IndexedFloat* ptrData = &data[i * histWidth];
+			for (int j = 0; j < histWidth; j++)
+			{
+				if (ptrHist[numOfBins] > 0)
+				{
+					int mainIndex;
+					float currMaxRatio = -1.0F;
+					for (int k = 0; k < numOfBins; k++)
+					{
+						if (ptrHist[k] > currMaxRatio)
+						{
+							currMaxRatio = ptrHist[k];
+							mainIndex = k;
+						}
+					}
+					ptrData[j].first = mainIndex;
+					ptrData[j].second = currMaxRatio;
+				}
+				ptrHist += (numOfBins + 1);
+			}
+		}
+	};
+	void getLocalMaxima(std::vector<std::vector<int> >& data, int numOfPlanes)
+	{
+		data.resize(numOfPlanes);
+		for (int k = 0; k < numOfPlanes; k++)
+			data[k].resize(histWidth * histHeight, numOfBins);
+		for (int i = 0; i < histHeight; i++)
+		{
+			float* ptrHist = hist.ptr<float>(i);
+			std::vector<int*> ptrData(numOfPlanes);
+			for (int k = 0; k < numOfPlanes; k++)
+				ptrData[k] = &data[k][i * histWidth];
+			for (int j = 0; j < histWidth; j++)
+			{
+				if (ptrHist[numOfBins] > 0)
+				{
+					std::vector<IndexedFloat> pairIndexWeights(numOfBins);
+					for (int k = 0; k < numOfBins; k++)
+					{
+						pairIndexWeights[k].first = k;
+						pairIndexWeights[k].second = ptrHist[k];
+					}
+					partial_sort(pairIndexWeights.begin(), pairIndexWeights.begin() + numOfPlanes, pairIndexWeights.end(), greaterByValue);
+					for (int k = 0; k < numOfPlanes; k++)
+					{
+						if (pairIndexWeights[k].second == 0)
+							continue;
+						ptrData[k][j] = pairIndexWeights[k].first;
+					}				
+				}
+				ptrHist += (numOfBins + 1);
+			}
+		}
+	};
+	void getLocalMaxima(std::vector<std::vector<IndexedFloat> >& data, int numOfPlanes)
+	{
+		data.resize(numOfPlanes);
+		for (int k = 0; k < numOfPlanes; k++)
+			data[k].resize(histWidth * histHeight, IndexedFloat(numOfBins, 0));
+		for (int i = 0; i < histHeight; i++)
+		{
+			float* ptrHist = hist.ptr<float>(i);
+			std::vector<IndexedFloat*> ptrData(numOfPlanes);
+			for (int k = 0; k < numOfPlanes; k++)
+				ptrData[k] = &data[k][i * histWidth];
+			for (int j = 0; j < histWidth; j++)
+			{
+				if (ptrHist[numOfBins] > 0)
+				{
+					std::vector<IndexedFloat> pairIndexWeights(numOfBins);
+					for (int k = 0; k < numOfBins; k++)
+					{
+						pairIndexWeights[k].first = k;
+						pairIndexWeights[k].second = ptrHist[k];
+					}
+					partial_sort(pairIndexWeights.begin(), pairIndexWeights.begin() + numOfPlanes, pairIndexWeights.end(), greaterByValue);
+					for (int k = 0; k < numOfPlanes; k++)
+					{
+						if (pairIndexWeights[k].second == 0)
+							continue;
+						ptrData[k][j] = pairIndexWeights[k];
+					}				
+				}
+				ptrHist += (numOfBins + 1);
+			}
+		}
+	};
+private:
+	int histWidth, histHeight;
+	int numOfBins;
+	float learnRate;
+	int maxCount;
+	cv::Mat hist;
+};
+
+class LocalDirectionHistogram
+{
+public:
+	void init(const cv::Size& imageSize, 
+		      const cv::Size& blockSize = cv::Size(16, 16), 
+			  int numberOfBins = 8);
+	void update(const std::vector<LineSegment>& lineSegments);
+	void getMainDirection(cv::Mat& image);
+	void drawMainDirection(cv::Mat& image, const cv::Scalar& color);
+	void getDirections(cv::Mat* images, int numOfImages);
+	void drawDirections(cv::Mat* images, int numOfImages, const cv::Scalar& color);	
+
+private:
+	LocalHistogram hist;
+	int histWidth, histHeight;
+	int imageWidth, imageHeight;
+	int stepX, stepY;
+	int numOfBins;
+};
