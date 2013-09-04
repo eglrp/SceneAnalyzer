@@ -53,6 +53,5 @@ private:
 	std::vector<cv::KeyPoint> currKeyPoints, lastKeyPoints;
 	cv::Mat currDescriptors, lastDescriptors;
 	ViBeForegroundExtractor foreExtractor;
-	//DirectionLookUpTable lut;	
 	LocalDirectionHistogram dirHist;
 };

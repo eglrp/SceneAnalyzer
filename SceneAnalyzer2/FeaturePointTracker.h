@@ -72,32 +72,6 @@ public:
 	std::list<FeaturePoint*> pointList;
 };
 
-class DirectionLookUpTable
-{
-public:
-	void init(const cv::Size& imageSize, 
-		      const cv::Size& blockSize = cv::Size(16, 16), 
-			  int numberOfBins = 8);
-	void update(const std::vector<LineSegment>& lineSegments);
-	bool getMainDirection(const cv::Rect& rect, int& angle);
-	void drawMainDirection(cv::Mat& image, const cv::Scalar& color);
-	void printMainDirection(void);
-	void drawDirections(std::vector<cv::Mat>& images, const cv::Scalar& color);
-	void getDirections(cv::Mat* images, int numOfImages);
-
-private:
-	// 表示每个像素的运动方向分布情况 每个像素由 numOfBins + 1 个浮点数组成 最后一个浮点数表示
-	// 查找表表示的每个点 有 numOfBins 个 bin，起始 bin 以零度为中心，随后的中心沿着逆时针旋转
-	cv::Mat lut;    
-	int lutWidth, lutHeight;
-	int imageWidth, imageHeight;
-	int stepX, stepY;
-	int numOfBins;
-	float learnRate;
-	float initWeight;
-	int maxCount;
-};
-
 typedef std::pair<int, float> IndexedFloat;
 
 inline bool greaterByValue(const IndexedFloat& lhs, const IndexedFloat& rhs)
@@ -139,6 +113,21 @@ public:
 			ptrHist[k] /= acc;
 		}
 	};
+	double calcUpdatedRatio(void)
+	{
+		int updateCount = 0;
+		for (int i = 0; i < histHeight; i++)
+		{
+			float* ptrHist = hist.ptr<float>(i);
+			for (int j = 0; j < histWidth; j++)
+			{
+				if (ptrHist[numOfBins] > 0)
+					updateCount++;
+				ptrHist += (1 + numOfBins);
+			}
+		}
+		return double(updateCount) / histWidth * histHeight;
+	}
 	void clear(void)
 	{
 		hist.setTo(0);
@@ -279,6 +268,8 @@ public:
 		      const cv::Size& blockSize = cv::Size(16, 16), 
 			  int numberOfBins = 8);
 	void update(const std::vector<LineSegment>& lineSegments);
+	double calcUpdatedRatio(void);
+	void clear(void);
 	void getMainDirection(cv::Mat& image);
 	void drawMainDirection(cv::Mat& image, const cv::Scalar& color);
 	void getDirections(cv::Mat* images, int numOfImages);

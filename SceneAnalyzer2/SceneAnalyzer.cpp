@@ -22,7 +22,6 @@ void SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 		GaussianBlur(grayImage, grayBlurImage, Size(3, 3), 1);
 		calcGradient(grayBlurImage, gradImage, 0.25);
 		foreExtractor.init(blurImage, gradImage, path);
-		//lut.init(normSize, Size(8, 8), 8);
 		dirHist.init(normSize, Size(8, 8), 16);
 		foregroundImage = Mat::zeros(normSize, CV_8UC1);
 		foregroundRects.clear();
@@ -70,7 +69,6 @@ void SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 	}
 	pointTracker.track(currKeyPoints, filteredMatches, lineSegs, timeStamp, frameCount);
 	pointTracker.fillCurrentDirections(foregroundImage);
-	//lut.update(lineSegs);
 	dirHist.update(lineSegs);
 	lastKeyPoints = currKeyPoints;
 	currDescriptors.copyTo(lastDescriptors);

@@ -239,21 +239,6 @@ bool FeaturePointTracker::checkRectsConnection(const cv::Rect& rect1, int frameC
 	return false;
 }
 
-void DirectionLookUpTable::init(const Size& imageSize, const Size& blockSize, int numberOfBins)
-{
-	learnRate = 0.01;
-	initWeight = 0.05;
-	maxCount = 1.0F / learnRate;
-	imageWidth = imageSize.width;
-	imageHeight = imageSize.height;
-	stepX = blockSize.width;
-	stepY = blockSize.height;
-	numOfBins = numberOfBins;
-	lutHeight = imageSize.height / stepY;
-	lutWidth = imageSize.width / stepX;
-	lut = Mat::zeros(lutHeight, lutWidth * (1 + numOfBins), CV_32FC1); 
-}
-
 static inline int getBinIndex(int angle, int numOfBins)
 {
 	return int(double(angle) / 360.0 * numOfBins) % numOfBins;
@@ -293,155 +278,6 @@ static void getLUTPointsCrspndToLineSegment(const LineSegment& lineSegment, vect
 	}
 }
 
-void DirectionLookUpTable::update(const vector<LineSegment>& lineSegments)
-{	
-	for (int i = 0; i < lineSegments.size(); i++)
-	{
-		// 根据 angle 值确定应该修改哪个 bin
-		int binIndex = getBinIndex(lineSegments[i].angle, numOfBins);
-		vector<Point> points;
-		// 根据起始点和终止点计算 LUT 中哪些位置的元素的直方图需要修改
-		getLUTPointsCrspndToLineSegment(lineSegments[i], points, stepX, stepY);
-		for (int j = 0; j < points.size(); j++)
-		{
-			float* ptrHist = &lut.at<float>(points[j].y, points[j].x * (1 + numOfBins));
-			if (ptrHist[numOfBins] < maxCount)
-			{
-				ptrHist[numOfBins] += 1;
-				ptrHist[binIndex] += 1.0F / ptrHist[numOfBins];
-			}
-			else
-			{
-				ptrHist[binIndex] += learnRate;
-			}
-			float acc = 0;
-			for (int k = 0; k < numOfBins; k++)
-			{
-				acc += ptrHist[k];
-			}
-			for (int k = 0; k < numOfBins; k++)
-			{
-				ptrHist[k] /= acc;
-			}
-		}
-	}
-}
-
-bool DirectionLookUpTable::getMainDirection(const Rect& imageRegion, int& angle)
-{
-	int accAngle = 0;
-	int count = 0;
-	int begX = imageRegion.x / stepX - 1; 
-	int endX = (imageRegion.x + imageRegion.width) / stepX + 1;
-	int begY = imageRegion.y / stepY - 1;
-	int endY = (imageRegion.y + imageRegion.height) / stepY + 1;
-	if (begX < 0) begX = 0;
-	if (endX > lutWidth) endX = lutWidth;
-	if (begY < 0) begY = 0;
-	if (endY > lutHeight) endY = lutHeight;
-	for (int i = begY; i < endY; i++)
-	{
-		float* ptr = lut.ptr<float>(i);
-		for (int j = begX; j < endX; j++)
-		{
-			if (ptr[numOfBins] > 0)
-			{
-				int mainDirIndex;
-				float currMaxRatio = -1.0F;
-				for (int k = 0; k < numOfBins; k++)
-				{
-					if (ptr[k] > currMaxRatio)
-					{
-						currMaxRatio = ptr[k];
-						mainDirIndex = k;
-					}
-				}
-				accAngle += float(mainDirIndex) / numOfBins * 360.0F;
-				count++;
-			}
-			ptr += (numOfBins + 1);
-		}
-	}
-	if (count == 0)
-	{
-		angle = -1;
-		return false;
-	}
-	else
-	{
-		angle = double(accAngle) / count;
-		return true;
-	}
-}
-
-void DirectionLookUpTable::drawMainDirection(Mat& image, const Scalar& color)
-{
-	const static int radius = 4;
-	for (int i = 0; i < lutHeight; i++)
-	{
-		float* ptr = lut.ptr<float>(i);
-		for (int j = 0; j < lutWidth; j++)
-		{
-			if (ptr[numOfBins] > 0)
-			{
-				int mainDirIndex;
-				float currMaxRatio = -1.0F;
-				for (int k = 0; k < numOfBins; k++)
-				{
-					if (ptr[k] > currMaxRatio)
-					{
-						currMaxRatio = ptr[k];
-						mainDirIndex = k;
-					}
-				}
-				double angle = mathPi * 2 * float(mainDirIndex) / numOfBins;
-				Point beg, end, center;
-				center.x = (j + 0.5F) * stepX;
-				center.y = (i + 0.5F) * stepY;
-				beg.x = center.x - radius * cos(angle);
-				beg.y = center.y - radius * sin(angle);
-				end.x = center.x + radius * cos(angle);
-				end.y = center.y + radius * sin(angle);
-				line(image, beg, end, color);
-				circle(image, beg, 1, color);
-			}
-			ptr += (numOfBins + 1);
-		}
-	}
-}
-
-void DirectionLookUpTable::printMainDirection(void)
-{
-	printf("print main direction:-------------------------------");
-	for (int i = 0; i < lutHeight; i++)
-	{
-		float* ptr = lut.ptr<float>(i);
-		for (int j = 0; j < lutWidth; j++)
-		{
-			if (ptr[numOfBins] > 0)
-			{
-				int mainDirIndex;
-				float currMaxRatio = -1.0F;
-				for (int k = 0; k < numOfBins; k++)
-				{
-					if (ptr[k] > currMaxRatio)
-					{
-						currMaxRatio = ptr[k];
-						mainDirIndex = k;
-					}
-				}
-				int angle = 360 * float(mainDirIndex) / numOfBins;
-				printf("%4d", angle);
-			}
-			else
-				printf("    ");
-			ptr += (numOfBins + 1);
-		}
-		printf("\n");
-	}
-	printf("end-------------------------------------------------\n");
-}
-
 typedef pair<int, float> PairIndexWeight;
 
 static inline bool greaterByWeight(const PairIndexWeight& lhs, const PairIndexWeight& rhs)
@@ -452,93 +288,6 @@ static inline bool greaterByWeight(const PairIndexWeight& lhs, const PairIndexWe
 static inline Scalar operator*(const Scalar& scalar, float r)
 {
 	return Scalar(scalar[0] * r, scalar[1] * r, scalar[2] * r, scalar[3] * r);
-}
-
-void DirectionLookUpTable::drawDirections(vector<Mat>& images, const Scalar& color)
-{
-	const static int radius = 4;
-	int numOfImages = images.size();
-	for (int i = 0; i < lutHeight; i++)
-	{
-		float* ptr = lut.ptr<float>(i);
-		for (int j = 0; j < lutWidth; j++)
-		{
-			if (ptr[numOfBins] > 0)
-			{
-				vector<PairIndexWeight> pairIndexWeights(numOfBins);
-				for (int k = 0; k < numOfBins; k++)
-				{
-					pairIndexWeights[k].first = k;
-					pairIndexWeights[k].second = ptr[k];
-				}
-				partial_sort(pairIndexWeights.begin(), pairIndexWeights.begin() + numOfImages, pairIndexWeights.end(), greaterByWeight);
-				for (int k = 0; k < numOfImages; k++)
-				{
-					if (pairIndexWeights[k].second == 0)
-						continue;
-					double angle = mathPi * 2 * float(pairIndexWeights[k].first) / numOfBins;
-					Point beg, end, center;
-					center.x = (j + 0.5F) * stepX;
-					center.y = (i + 0.5F) * stepY;
-					beg.x = center.x - radius * cos(angle);
-					beg.y = center.y - radius * sin(angle);
-					end.x = center.x + radius * cos(angle);
-					end.y = center.y + radius * sin(angle);
-					line(images[k], beg, end, color * pairIndexWeights[k].second);
-					circle(images[k], beg, 2, color * pairIndexWeights[k].second);
-				}				
-			}
-			ptr += (numOfBins + 1);
-		}
-	}
-}
-
-void DirectionLookUpTable::getDirections(cv::Mat* images, int numOfImages)
-{
-	vector<vector<unsigned char> > angles(numOfImages);	
-	for (int k = 0; k < numOfImages; k++)
-	{
-		images[k].create(imageHeight, imageWidth, CV_8UC1);
-		angles[k].resize(lutHeight * lutWidth, 255);
-	}
-		
-	for (int i = 0; i < lutHeight; i++)
-	{
-		float* ptr = lut.ptr<float>(i);
-		vector<unsigned char*> ptrAngles(numOfImages);
-		for (int k = 0; k < numOfImages; k++)
-			ptrAngles[k] = &(angles[k][i * lutWidth]);
-		for (int j = 0; j < lutWidth; j++)
-		{
-			if (ptr[numOfBins] > 0)
-			{
-				vector<PairIndexWeight> pairIndexWeights(numOfBins);
-				for (int k = 0; k < numOfBins; k++)
-				{
-					pairIndexWeights[k].first = k;
-					pairIndexWeights[k].second = ptr[k];
-				}
-				partial_sort(pairIndexWeights.begin(), pairIndexWeights.begin() + numOfImages, pairIndexWeights.end(), greaterByWeight);
-				for (int k = 0; k < numOfImages; k++)
-				{
-					if (pairIndexWeights[k].second != 0)
-						ptrAngles[k][j] = 180 * float(pairIndexWeights[k].first) / numOfBins;
-				}				
-			}
-			ptr += (numOfBins + 1);
-		}
-	}
-
-	for (int k = 0; k < numOfImages; k++)
-	{
-		for (int i = 0; i < imageHeight; i++)
-		{
-			unsigned char* ptrAngle = &(angles[k][i / stepY * lutWidth]);
-			unsigned char* ptrImage = images[k].ptr<unsigned char>(i);
-			for (int j = 0; j < imageWidth; j++)
-				ptrImage[j] = ptrAngle[j / stepX];
-		}
-	}
 }
 
 void LocalDirectionHistogram::init(const Size& imageSize, const Size& blockSize, int numberOfBins)
@@ -567,6 +316,16 @@ void LocalDirectionHistogram::update(const vector<LineSegment>& lineSegments)
 			hist.update(points[j].x, points[j].y, binIndex);
 		}
 	}
+}
+
+double LocalDirectionHistogram::calcUpdatedRatio(void)
+{
+	return hist.calcUpdatedRatio();
+}
+
+void LocalDirectionHistogram::clear(void)
+{
+	hist.clear();
 }
 
 void LocalDirectionHistogram::getMainDirection(Mat& image)
