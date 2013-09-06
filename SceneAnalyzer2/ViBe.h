@@ -72,7 +72,6 @@ private:
 	int subSampleInterval;                  // 它的倒数等于更新保存像素值的概率
 
 	Mat foreImage;                          // 前景图
-	Mat foreImageLineBegin;
 	unsigned char** ptrFore;                // 前景图首行地址
 	unsigned char* samples;                 // 保存先前像素值 即样本
 	unsigned char** ptrSamples;             // 样本的行首地址
