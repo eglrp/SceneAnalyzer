@@ -14,7 +14,8 @@ using namespace cv;
 
 int main(void)
 {
-	string path = "d:/imageandvideo/taicangvideo/11/72(00h11m41s-00h15m50s).flv";
+	string path = "D:/SHARED/beijingVideo/B9-1_Ãñ×å·¹µê£¨98£©_20130814113000_20130814114733_5544859.mp4"
+	/*"d:/shared/taicangvideo/1/70.flv"*/;
 	SceneAnalyzer analyzer;
 	FeaturePointTracker tracker;
 	//Mat image, foreImage,mainDirImage;

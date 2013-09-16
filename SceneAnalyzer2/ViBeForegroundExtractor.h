@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cmath>
 #include <vector>
+#include <fstream>
+#include <sstream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -64,4 +66,9 @@ private:
 
 	int foreLargeCount;
 	int imageWidth, imageHeight;
+
+	double ratioRectWidthLarge, ratioRectHeightLarge;
+	int rectWidthForUnion, rectHeightForUnion;
+	double ratioUnionRectAreaLarge;
+	int foreLargeCountForRefill;
 };

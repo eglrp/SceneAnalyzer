@@ -22,7 +22,7 @@ int SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 		GaussianBlur(grayImage, grayBlurImage, Size(3, 3), 1);
 		calcGradient(grayBlurImage, gradImage, 0.25);
 		foreExtractor.init(blurImage, gradImage, path);
-		dirHist.init(normSize, Size(8, 8), 16);
+		dirHist.init(normSize, Size(8, 8), 32);
 		foregroundImage = Mat::zeros(normSize, CV_8UC1);
 		mainDirImage = Mat::zeros(normSize, CV_8UC1);
 		foregroundRects.clear();
@@ -119,11 +119,12 @@ int SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 	//pointTracker.drawCurrentPositions(ftrPoints, 255);
 	//blur(ftrPoints, ftrPoints, Size(11, 11));
 	//imshow("feature points region", ftrPoints > 0);
-	//Mat result = image.clone();
+	Mat result = image.clone();
 	//pointTracker.drawHistories(result, Scalar(0, 255, 0));
+	pointTracker.drawCurrentDirections(result, Scalar(0, 255, 0));
 	//for (int i = 0; i < normRects.size(); i++)
 	//	rectangle(result, normRects[i], Scalar(0, 0, 255));
-	//imshow("result", result);
+	imshow("curr dir", result);
 	//waitKey(30);
 
 	//Mat mainDir;
@@ -136,9 +137,9 @@ int SceneAnalyzer::analyze(Mat& frame, long long int timeStamp, int frameCount,
 	//imshow("dir image 1", dirs[1]);
 	//imshow("dir image 2", dirs[2]);
 
-	//Mat mainDirection = image.clone();
-	//dirHist.drawMainDirection(mainDirection, Scalar(0, 255, 0));
-	//imshow("main direction", mainDirection);
+	Mat mainDirection = image.clone();
+	dirHist.drawMainDirection(mainDirection, Scalar(0, 255, 0));
+	imshow("main dir", mainDirection);
 
 	//Mat directions[3];
 	//directions[0] = image.clone();

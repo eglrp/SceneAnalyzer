@@ -117,6 +117,40 @@ void ViBeForegroundExtractor::init(Mat& image, Mat& gradImage, const string& pat
 	gradBackModel.init(gradImage, path, "[gradient]");
 	rectExtractor.init(Size(imageWidth, imageHeight));
 	foreLargeCount = 0;
+
+	fstream initFileStream;
+	initFileStream.open(path.c_str());
+	if (!initFileStream.is_open())
+	{
+		throw string("ERROR in ViBeForegroundExtractor::init(), cannot open file ") + path + string(" for configuration");
+	}
+	char stringNotUsed[500];
+	do
+	{
+		initFileStream >> stringNotUsed;
+		if (initFileStream.eof())
+		{
+			stringstream sstr;
+			sstr << "ERROR in ViBe::config(), cannot find label [ViBeForegroundExtractor] for configuration";
+			throw sstr.str();
+		}
+	}
+	while(string(stringNotUsed) != "[ViBeForegroundExtractor]");
+	initFileStream >> stringNotUsed >> ratioRectWidthLarge;
+	initFileStream >> stringNotUsed >> ratioRectHeightLarge;
+	initFileStream >> stringNotUsed >> rectWidthForUnion;
+	initFileStream >> stringNotUsed >> rectHeightForUnion;
+	initFileStream >> stringNotUsed >> ratioUnionRectAreaLarge;
+	initFileStream >> stringNotUsed >> foreLargeCountForRefill;
+	initFileStream.close();
+
+	printf("display ViBeForegroundExtractor config:\n");
+	printf("  ratioRectWidthLarge = %.4f\n", ratioRectWidthLarge);
+	printf("  ratioRectHeightLarge = %.4f\n", ratioRectHeightLarge);
+	printf("  rectWidthForUnion = %d\n", rectWidthForUnion);
+	printf("  rectHeightForUnion = %d\n", rectHeightForUnion);
+	printf("  ratioUnionRectAreaLarge = %.4f\n", ratioUnionRectAreaLarge);
+	printf("  foreLargeCountForRefill = %d\n", foreLargeCountForRefill);
 }
 
 int ViBeForegroundExtractor::apply(Mat& image, Mat& gradImage, 
@@ -140,14 +174,14 @@ int ViBeForegroundExtractor::apply(Mat& image, Mat& gradImage,
 	for (int i = 0; i < contours.size(); i++)
 	{
 		Rect rect = boundingRect(contours[i]);
-		if (rect.width > 0.9 * imageWidth && rect.height > 0.9 * imageHeight)
+		if (rect.width > ratioRectWidthLarge * imageWidth && rect.height > ratioRectHeightLarge * imageHeight)
 			hasLargeForeground = true;
 		if (rect.width > 20 && rect.height > 20)
 		{
 			rects.push_back(rect);
 			refinedContours.push_back(contours[i]);
 		}
-		if (rect.width > 50 && rect.height > 50)
+		if (rect.width > rectWidthForUnion && rect.height > rectHeightForUnion)
 		{
 			if (unionRect == Rect(0, 0, 0, 0))
 				unionRect = rect;
@@ -155,7 +189,7 @@ int ViBeForegroundExtractor::apply(Mat& image, Mat& gradImage,
 				unionRect |= rect;
 		}
 	}
-	if (unionRect.area() > 0.95 * imageWidth * imageHeight)
+	if (unionRect.area() > ratioUnionRectAreaLarge * imageWidth * imageHeight)
 		hasLargeForeground = true;
 	rectExtractor.extract(rects, staticRects);
 
@@ -174,7 +208,7 @@ int ViBeForegroundExtractor::apply(Mat& image, Mat& gradImage,
 		foreLargeCount++;
 		printf("foreground large, count is %d\n", foreLargeCount);
 		waitKey(0);
-		if (foreLargeCount > 10)
+		if (foreLargeCount > foreLargeCountForRefill)
 		{
 			printf("refill foreground\n");
 			waitKey(0);

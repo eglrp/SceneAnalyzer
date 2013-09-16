@@ -19,9 +19,10 @@ minNumOfMatchCount     2
 subSampleInterval     16
 learnRate           0.02
 
-[chromadiff]
-numOfSamples          10
-minMatchDist           4
-minNumOfMatchCount     2
-subSampleInterval     16
-learnRate           0.02
+[ViBeForegroundExtractor]
+ratioRectWidthLarge        0.9
+ratioRectHeightLarge       0.9
+rectWidthForUnion           50
+rectHeightForUnion          50
+ratioUnionRectAreaLarge   0.95
+foreLargeCountForRefill     10

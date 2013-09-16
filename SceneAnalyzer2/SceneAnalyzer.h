@@ -22,7 +22,7 @@ public:
 		: path(configFilePath),
 		  hasInit(false),
 		  orb(500, 1.41F, 2, 15, 0, 2, 0, 15), 
-		  matcher(NORM_HAMMING) {};
+		  matcher(NORM_HAMMING, true) {};
 	struct State
 	{
 		enum {BEGIN = 0, LEARNING = 1, NORMAL = 2, ABNORMAL = 3};

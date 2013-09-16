@@ -60,7 +60,7 @@ public:
 	void drawCurrentPositions(cv::Mat& image, const cv::Scalar& color);
 	void drawHistories(cv::Mat& image, const cv::Scalar& color);
 	// 以下两个函数 运动方向 1 表示 0 度，180 表示 358 度，255 表示运动方向未知
-    // 画出特征点的运动方向 anglesImage 不需要预先分配内存
+    // 画出特征点的运动方向 anglesImage 需要预先分配内存
 	void drawCurrentDirections(cv::Mat& image, const cv::Scalar& color);	
 	// 把特征点的运动方向填充到 image 需要预先分配内存 图片的类型是 CV_8UC1
 	void fillCurrentDirections(cv::Mat& image);
