@@ -64,8 +64,10 @@ public:
 	void drawCurrentDirections(cv::Mat& image, const cv::Scalar& color);	
 	// 把特征点的运动方向填充到 image 需要预先分配内存 图片的类型是 CV_8UC1
 	void fillCurrentDirections(cv::Mat& image);
-	// 给定两个帧号和两个矩形 判定区域内是否存在连通的跟踪点
+	// 给定两个帧号和两个矩形 判定区域内是否存在连通的特征点
 	bool checkRectsConnection(const cv::Rect& rect1, int frameCount1, const cv::Rect& rect2, int frameCount2);
+	// 给定两个帧号和两个矩形 计算连通的特征点的面积的相对比例
+	double calcConnectedAreaRatio(const cv::Rect& numRect, int numFrameCount, const cv::Rect& denRect, int denFrameCount);
 private:
 	cv::Size origSize, normSize;
 	int scaleOrigToNorm;

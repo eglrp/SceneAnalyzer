@@ -248,6 +248,41 @@ bool FeaturePointTracker::checkRectsConnection(const cv::Rect& rect1, int frameC
 	return false;
 }
 
+double FeaturePointTracker::calcConnectedAreaRatio(const Rect& numRect, int numFrameCount, const Rect& denRect, int denFrameCount)
+{
+	Rect normNumRect = div(numRect, scaleOrigToNorm), normDenRect = div(denRect, scaleOrigToNorm);
+	vector<Point> numPoints, denPoints;
+	for (FtrPtPtrItr itr = pointList.begin(); itr != pointList.end(); ++itr)
+	{
+		const vector<FeaturePoint::PointRecord>& refPointHistory = (*itr)->pointHistory;
+		bool hit1 = false, hit2 = false;
+		Point numPoint, denPoint;
+		for (int i = 0; i < refPointHistory.size(); i++)
+		{
+			if (refPointHistory[i].count == numFrameCount &&
+				normNumRect.contains(refPointHistory[i].point))
+			{
+				hit1 = true;
+				numPoint = refPointHistory[i].point;
+			}
+			if (refPointHistory[i].count == denFrameCount &&
+				normDenRect.contains(refPointHistory[i].point))
+			{
+				hit2 = true;
+				denPoint = refPointHistory[i].point;
+			}
+			if (hit1 && hit2)
+			{
+				numPoints.push_back(numPoint);
+				denPoints.push_back(denPoint);
+			}
+		}
+	}
+	double numArea = boundingRect(numPoints).area();
+	double denArea = boundingRect(denPoints).area();
+	return (denArea < 2) ? 0 : (numArea / denArea); 
+}
+
 static inline int getBinIndex(int angle, int numOfBins)
 {
 	return int(double(angle) / 360.0 * numOfBins) % numOfBins;

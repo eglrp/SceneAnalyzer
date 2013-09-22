@@ -52,7 +52,7 @@ void ViBe::init(void)
 	config();
 	
 	ptrFore = 0;
-#if RUN_VIBE_WITH_BACKGROUND_SUBTRACTION
+#if RUN_VIBE_WITH_BACKGROUND_CONSTRUCTION
 	ptrBack = 0;
 #endif
 	ptrNoUpdate = 0;
@@ -110,7 +110,7 @@ void ViBe::init(Mat& image, const string& path, const string& signature)
 	for (int i = 0; i < imageHeight; i++)
 		ptrFore[i] = foreImage.ptr<unsigned char>(i);
 
-#if RUN_VIBE_WITH_BACKGROUND_SUBTRACTION
+#if RUN_VIBE_WITH_BACKGROUND_CONSTRUCTION
 	// 初始化背景图
 	if (imageChannels == 3)
 		backImage = Mat::zeros(imageHeight, imageWidth, CV_32FC3);
@@ -144,7 +144,7 @@ void ViBe::init(Mat& image, const string& path, const string& signature)
 void ViBe::release(void)
 {
 	delete [] ptrFore;       ptrFore = 0;
-#if RUN_VIBE_WITH_BACKGROUND_SUBTRACTION
+#if RUN_VIBE_WITH_BACKGROUND_CONSTRUCTION
 	delete [] ptrBack;       ptrBack = 0;
 #endif
 	delete [] ptrNoUpdate;   ptrNoUpdate = 0;
@@ -158,7 +158,7 @@ void ViBe::update(Mat& image, Mat& foregroundImage, const vector<Rect>& rectsNoU
 	foreImage.copyTo(foregroundImage);
 }
 
-#if RUN_VIBE_WITH_BACKGROUND_SUBTRACTION
+#if RUN_VIBE_WITH_BACKGROUND_CONSTRUCTION
 void ViBe::update(Mat& image, Mat& foregroundImage, Mat& backgroundImage, const vector<Rect>& rectsNoUpdate)
 {
 	update(image, rectsNoUpdate);
@@ -206,7 +206,7 @@ void ViBe::fill8UC3(Mat& image)
 			}
 		} 
 	}
-#if RUN_VIBE_WITH_BACKGROUND_SUBTRACTION
+#if RUN_VIBE_WITH_BACKGROUND_CONSTRUCTION
 	image.convertTo(backImage, CV_32FC3);
 #endif
 	delete [] ptrImage;
@@ -235,7 +235,7 @@ void ViBe::fill8UC1(Mat& image)
 			}
 		} 
 	}
-#if RUN_VIBE_WITH_BACKGROUND_SUBTRACTION
+#if RUN_VIBE_WITH_BACKGROUND_CONSTRUCTION
 	image.convertTo(backImage, CV_32FC1);
 #endif
 	delete [] ptrImage;
@@ -318,7 +318,7 @@ void ViBe::update(Mat& image, const vector<Rect>& rectsNoUpdate)
 			}
 		}
 
-#if RUN_VIBE_WITH_BACKGROUND_SUBTRACTION
+#if RUN_VIBE_WITH_BACKGROUND_CONSTRUCTION
 		// 更新背景图
 		accumulateWeighted(image, backImage, learnRate, ~(foreImage | noUpdateImage));
 #endif
@@ -378,7 +378,7 @@ void ViBe::update(Mat& image, const vector<Rect>& rectsNoUpdate)
 			}
 		}
 
-#if RUN_VIBE_WITH_BACKGROUND_SUBTRACTION
+#if RUN_VIBE_WITH_BACKGROUND_CONSTRUCTION
 		// 更新背景图
 		accumulateWeighted(image, backImage, learnRate, ~(foreImage | noUpdateImage));
 #endif
@@ -463,7 +463,7 @@ void ViBe::config(const string& path, const string& signature)
 		minMatchDist = 40;
 		minNumOfMatchCount = 2;
 		subSampleInterval = 16;
-#if RUN_VIBE_WITH_BACKGROUND_SUBTRACTION
+#if RUN_VIBE_WITH_BACKGROUND_CONSTRUCTION
 		learnRate = 0.02F;
 		compLearnRate = 1.F - learnRate;
 #endif
@@ -495,13 +495,13 @@ void ViBe::config(const string& path, const string& signature)
 		initFileStream >> stringNotUsed >> minMatchDist;
 		initFileStream >> stringNotUsed >> minNumOfMatchCount;
 		initFileStream >> stringNotUsed >> subSampleInterval;
-#if RUN_VIBE_WITH_BACKGROUND_SUBTRACTION
+#if RUN_VIBE_WITH_BACKGROUND_CONSTRUCTION
 		initFileStream >> stringNotUsed >> learnRate;
 #endif
 
 		initFileStream.close();
 		initFileStream.clear();
-#if RUN_VIBE_WITH_BACKGROUND_SUBTRACTION
+#if RUN_VIBE_WITH_BACKGROUND_CONSTRUCTION
 		compLearnRate = 1.F - learnRate;
 #endif
 
@@ -510,7 +510,7 @@ void ViBe::config(const string& path, const string& signature)
 		printf("  minMatchDist = %d\n", minMatchDist);
 		printf("  minNumOfMatchCount = %d\n", minNumOfMatchCount);
 		printf("  subSampleInterval = %d\n", subSampleInterval);
-#if RUN_VIBE_WITH_BACKGROUND_SUBTRACTION
+#if RUN_VIBE_WITH_BACKGROUND_CONSTRUCTION
 		printf("  learnRate = %.4f\n", learnRate);
 		printf("  compLearnRate = %.4f\n", compLearnRate);
 #endif
