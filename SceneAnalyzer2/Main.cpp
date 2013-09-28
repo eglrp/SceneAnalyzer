@@ -14,12 +14,17 @@ using namespace cv;
 
 int main(void)
 {
-	string path = "D:/SHARED/beijingVideo/B9-1_民族饭店（98）_20130814113000_20130814114733_5544859.mp4"
-	/*"d:/shared/taicangvideo/1/70.flv"*/;
+	string path = "D:/SHARED/BeijingVideo/B9-2_南长街（81）_20130814100000_20130814103000_6733890.mp4"
+		/*"D:/SHARED/TaicangVideo/11/72(00h11m41s-00h15m50s).flv"*/
+		/*"D:/SHARED/beijingVideo/B9-1_民族饭店（98）_20130814113000_20130814114733_5544859.mp4"*/
+		/*"d:/shared/taicangvideo/1/70.flv"*/;
 	SceneAnalyzer analyzer;
 	FeaturePointTracker tracker;
 	//Mat image, foreImage,mainDirImage;
 	//vector<Rect> rects;
+	long long int beg, end;
+	double freq = getTickFrequency();
+	double timeElapsed;
 	VideoCapture cap;
 	cap.open(path);
 	if (!cap.isOpened())
@@ -37,7 +42,11 @@ int main(void)
 		if (!cap.read(image))
 			break;
 
+		beg = getTickCount();
 		int state = analyzer.analyze(image, currTime, currCount, foreImage, mainDirImage, rects, tracker);
+		end = getTickCount();
+		timeElapsed = double(end - beg) / freq;
+		printf("frame count: %d, time elapsed: %.4f, ", currCount, timeElapsed);
 		switch (state)
 		{
 		case SceneAnalyzer::State::BEGIN :      // 模型重新初始化 不宜新建识别任务 
