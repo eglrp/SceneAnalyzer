@@ -18,57 +18,57 @@ using namespace cv;
 class StaticRectExtractor
 {
 public:
-	void init(const Size& imageSize);
-	void extract(const vector<Rect>& rects, vector<Rect>& stableRects);
-	void clear(void);
+    void init(const Size& imageSize);
+    void extract(const vector<Rect>& rects, vector<Rect>& stableRects);
+    void clear(void);
 
 private:
-	Size size;
+    Size size;
 
-	struct RectInfo
-	{
-		Rect rect;
-		int matchCount;
-		int missCount;
-		int startFrameCount;
+    struct RectInfo
+    {
+        Rect rect;
+        int matchCount;
+        int missCount;
+        int startFrameCount;
 
-		RectInfo() {};
-		RectInfo(const Rect& rectVal, int currFrameCount)
-			: rect(rectVal), matchCount(0), missCount(0), startFrameCount(currFrameCount) {}; 
-	};
-	vector<RectInfo> staticRectInfos;
+        RectInfo() {};
+        RectInfo(const Rect& rectVal, int currFrameCount)
+            : rect(rectVal), matchCount(0), missCount(0), startFrameCount(currFrameCount) {}; 
+    };
+    vector<RectInfo> staticRectInfos;
 
-	int currFrameCount;
-	int thresFrameCount;  // startFrameCount 小于 thresFrameCount 的静态矩形不会输出到 stableRects 中
-	int maxFrameCount;    // currFrameCount 自增的最大值
+    int currFrameCount;
+    int thresFrameCount;  // startFrameCount 小于 thresFrameCount 的静态矩形不会输出到 stableRects 中
+    int maxFrameCount;    // currFrameCount 自增的最大值
 };
 
 class ViBeForegroundExtractor
 {
 public:
-	struct State
-	{
-		enum {BEGIN = 0, NORMAL = 1, ABNORMAL = 2};
-	};
-	void init(Mat& image, Mat& gradImage, const string& configFilePath);
-	int apply(Mat& image, Mat& gradImage, Mat& foregroundImage, vector<Rect>& rects);
+    struct State
+    {
+        enum {BEGIN = 0, NORMAL = 1, ABNORMAL = 2};
+    };
+    void init(Mat& image, Mat& gradImage, const string& configFilePath);
+    int apply(Mat& image, Mat& gradImage, Mat& foregroundImage, vector<Rect>& rects);
 
 private:
-	Mat colorForeImage;
-	Mat gradForeImage;
-	Mat testChangeForeImage;
+    Mat colorForeImage;
+    Mat gradForeImage;
+    Mat testChangeForeImage;
 
-	ViBe colorBackModel;
-	ViBe gradBackModel;
+    ViBe colorBackModel;
+    ViBe gradBackModel;
 
-	StaticRectExtractor rectExtractor;
-	vector<Rect> staticRects;
+    StaticRectExtractor rectExtractor;
+    vector<Rect> staticRects;
 
-	int foreLargeCount;
-	int imageWidth, imageHeight;
+    int foreLargeCount;
+    int imageWidth, imageHeight;
 
-	double ratioRectWidthLarge, ratioRectHeightLarge;
-	int rectWidthForUnion, rectHeightForUnion;
-	double ratioUnionRectAreaLarge;
-	int foreLargeCountForRefill;
+    double ratioRectWidthLarge, ratioRectHeightLarge;
+    int rectWidthForUnion, rectHeightForUnion;
+    double ratioUnionRectAreaLarge;
+    int foreLargeCountForRefill;
 };
